@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import ContextMenu from './ContextMenu';
+import deleteItem from '../helper/delete_item';
 function TreeNode({ node, onContextMenu, currentPath }) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -95,29 +96,7 @@ function List() {
   });
 
   useEffect(() => {
-    // Define the API endpoint and bearer token
-    const apiEndpoint = 'http://localhost:3001/v1/dropfile/list';
-    const token =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NGZkOGJhYzJkM2RjMjhkMzUwOWZlODEiLCJpYXQiOjE2OTUwNjkwMjMsImV4cCI6MTY5NTA3MDgyMywidHlwZSI6ImFjY2VzcyJ9.zsfZgdWzHN7M9AxsX8jcvgx4mmgiL9AY7Wf5IobPw8I'; // Replace with your actual bearer token
-
-    // Build the URL with the folderPath as a query parameter
-    const url = `${apiEndpoint}?folderPath=${encodeURIComponent(folderPath)}`;
-
-    // Fetch the list of files and directories from the API with the bearer token
-    axios
-      .get(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .then((response) => {
-        // Assuming the API response has a 'structure' and 'isRoot' property
-        setFiles([response.data.structure]);
-        setIsRoot(response.data.isRoot);
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+    updateFileStructure(); // Call the function to update the file structure
   }, [folderPath]);
 
   const handleContextMenu = (node, fullPath, event) => {
@@ -126,8 +105,8 @@ function List() {
       const options = [
         {
           id: 'option1',
-          label: 'Option 1',
-          action: () => handleOption1(node, fullPath),
+          label: `Delete`,
+          action: () => handle_deleteItem(node, fullPath),
         },
         {
           id: 'option2',
@@ -148,31 +127,46 @@ function List() {
     setContextMenu({ isOpen: false, position: { x: 0, y: 0 }, options: [] });
   };
 
-  const handleOption1 = (node, fullPath) => {
-    // Handle context menu option 1 for the selected node
-    // Access the node and fullPath here
-    console.log('Option 1 selected for node:', node);
-    console.log('Full path:', fullPath);
-    handleCloseContextMenu();
-  };
 
+
+const handle_deleteItem = async (node, fullPath) => {
+  const parts = fullPath.split('/');
+  const relativePath = parts.slice(1).join('/');
+  handleCloseContextMenu();
+
+  // Call the deleteItem function with the relativePath
+  await deleteItem(relativePath);
+  updateFileStructure();
+  
+};
+
+const updateFileStructure = () => {
+  const apiEndpoint = 'http://localhost:3001/v1/dropfile/list';
+    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NGZkOGJhYzJkM2RjMjhkMzUwOWZlODEiLCJpYXQiOjE2OTUyMzg2MzcsImV4cCI6MTY5NTI0MDQzNywidHlwZSI6ImFjY2VzcyJ9.890XiqtVlfX3zyEKn6-AFbGoJxGUdW8E9uSV57YrpsU'
+    const url = `${apiEndpoint}?folderPath=${encodeURIComponent(folderPath)}`;
+    axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      }
+    }).then((response) => {
+      setFiles([response.data.structure]);
+      setIsRoot(response.data.isRoot);
+    }).catch((error) => {
+    console.error(error);
+  });
+};
+
+  
   const handleOption2 = (node, fullPath) => {
-    // Handle context menu option 2 for the selected node
-    // Access the node and fullPath here
-    console.log('Option 2 selected for node:', node);
-    console.log('Full path:', fullPath);
+    const parts = fullPath.split('/');
+    const relativePath = parts.slice(1).join('/');
     handleCloseContextMenu();
   };
+  
 
   return (
     <div>
       <p>{isRoot ? 'This is the root folder' : 'This is not the root folder'}</p>
-      <input
-        type="text"
-        placeholder="Enter folder path"
-        value={folderPath}
-        onChange={(e) => setFolderPath(e.target.value)}
-      />
       {files.map((fileStructure) => (
         <TreeNode
           key={fileStructure.name}
