@@ -5,7 +5,7 @@ const deleteItem = async (relativePath) => {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NGZkOGJhYzJkM2RjMjhkMzUwOWZlODEiLCJpYXQiOjE2OTUyMzg2MzcsImV4cCI6MTY5NTI0MDQzNywidHlwZSI6ImFjY2VzcyJ9.890XiqtVlfX3zyEKn6-AFbGoJxGUdW8E9uSV57YrpsU',
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NGZkOGJhYzJkM2RjMjhkMzUwOWZlODEiLCJpYXQiOjE2OTY5NjI1MDMsImV4cCI6MTY5ODc2MjUwMywidHlwZSI6ImFjY2VzcyJ9.mOjEBlgM1qTu3Ff9mu8BnNckYmU-GY6qUA5S6ArhGmI',
           // Add any other headers you may need, such as authentication headers
         },
       });

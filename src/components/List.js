@@ -6,6 +6,7 @@ import renameItem from '../helper/rename_item';
 import apiConfig from './apiConfig';
 import downloadItem from '../helper/download_item';
 import RenameContextMenu from './RenameContextMenu';
+import { uploadFile } from '../helper/upload_item';
 
 function TreeNode({ node, onContextMenu, currentPath }) {
 
@@ -25,7 +26,7 @@ function TreeNode({ node, onContextMenu, currentPath }) {
       event.stopPropagation();
   
       let fullPath = node.name;
-  
+      
       // If there's a currentPath and it's not null, add a slash before appending the node's name
       if (currentPath !== null) {
         fullPath = `${currentPath}/${node.name}`;
@@ -70,7 +71,7 @@ function TreeNode({ node, onContextMenu, currentPath }) {
           {node.type === 'directory' && (isOpen ? '📁' : '📂')} {node.name}
         </span>
         {isOpen && node.children && node.children.length > 0 && (
-          <ul>
+          <ul className="pl-4"> {/* Add padding to create spacing */}
             {node.children.map((childNode) => (
               <li key={childNode.name}>
                 <TreeNode
@@ -90,13 +91,16 @@ function TreeNode({ node, onContextMenu, currentPath }) {
       </div>
     </div>
   );
+  
 }
 
 
 function List() {
   const [files, setFiles] = useState([]);
   const [folderPath, setFolderPath] = useState('');
+  const [targetPath, setTargetPath] = useState('');
   const [isRoot, setIsRoot] = useState(true); // Initialize as true for the root folder
+  const [rootName, setRootName ] = useState(true);
   const [isRenameContextMenuOpen, setRenameContextMenuOpen] = useState(false);
   const [renameTarget, setRenameTarget] = useState('');
   const [newItemName, setNewName] = useState(''); // State for the new name
@@ -118,26 +122,34 @@ function List() {
 
   const handleContextMenu = (node, fullPath, event) => {
     if (event) {
+      console.log(node);
       event.preventDefault();
-      console.log(fullPath)
       const options = [
         {
-          id: 'option1',
+          id: 'deleteItem',
           label: `Delete`,
           action: () => handle_deleteItem(node, fullPath),
         },
         {
-          id: 'option2',
-          label: 'download',
+          id: 'downloadItem',
+          label: 'Download',
           action: () => handle_downloadItem(node, fullPath),
         },
         {
-          id: 'option3',
+          id: 'renameItem',
           label: 'Rename',
           action: () => {
             handleCloseContextMenu();
             setRenameContextMenuOpen(true);
             handle_renameItem(node, fullPath); // Trigger the renaming logic
+          },
+        },
+        {
+          id: 'uploadItem',
+          label: 'Upload',
+          action: () => {
+            handleCloseContextMenu();
+            handle_uploadItem(node, fullPath); // Trigger the renaming logic
           },
         },
         // Add more options as needed
@@ -175,15 +187,49 @@ const handle_downloadItem = async (node, fullPath) => {
   await downloadItem(relativePath);
 };
 
-const handle_renameItem = (node, fullPath) => {
+const handle_renameItem = async (node, fullPath) => {
   // Open the RenameContextMenu by setting the state variables
   const parts = fullPath.split('/');
   const relativePath = parts.slice(1).join('/');
   const elementName = parts.pop(); // Get the last part as elementName
-  setFolderPath(relativePath);
+  setTargetPath(relativePath);
   setRenameContextMenuOpen(true);
   setRenameTarget(elementName);
+};
 
+function constructRelativePath(fullPath) {
+  const parts = fullPath.split('/');
+  const relativePath = parts.slice(1).join('/').replace(rootName, '');
+  return relativePath;
+}
+
+
+
+const handle_uploadItem = async (node, fullPath) => {
+
+  const relativePath = constructRelativePath(fullPath);
+
+  // Open a file selection dialog to choose the file to upload
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.onchange = async (e) => {
+    const selectedFile = e.target.files[0];
+
+    if (selectedFile) {
+      try {
+        await uploadFile(selectedFile, relativePath); // Use the helper function to upload the file
+        console.log('File uploaded successfully');
+        updateFileStructure();
+        // You can update the file structure or take other actions as needed
+      } catch (error) {
+        console.error('File upload failed:', error);
+        // Handle the error, e.g., display an error message
+      }
+    }
+  };
+
+  fileInput.click();
+  
 };
     
 const updateFileStructure = () => {
@@ -196,6 +242,7 @@ const updateFileStructure = () => {
     }).then((response) => {
       setFiles([response.data.structure]);
       setIsRoot(response.data.isRoot);
+      setRootName(response.data.structure.name);
     }).catch((error) => {
     console.error(error);
   });
@@ -207,11 +254,13 @@ const updateFileStructure = () => {
     const relativePath = parts.slice(1).join('/');
     handleCloseContextMenu();
   };
-  const handleRename = (newName) => {
+  const handleRename = async (newName) => {
     // Implement your renaming logic here and close the RenameContextMenu
     console.log('New folder name:', newName);
-    console.log('folder path', folderPath);
+    console.log('folder path', targetPath);
     setRenameContextMenuOpen(false);
+    await renameItem(newName, targetPath );
+    updateFileStructure();
   };
   return (
     <div>
